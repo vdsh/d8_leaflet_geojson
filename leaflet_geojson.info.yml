@@ -1,0 +1,8 @@
+name: Leaflet GeoJSON
+description: API Extension for using Leaflet with GeoJSON data sources.
+package: Mapping
+type: module
+core: 8.x
+
+dependencies:
+  - leaflet:leaflet

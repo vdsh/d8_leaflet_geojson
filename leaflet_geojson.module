@@ -1,0 +1,119 @@
+<?php
+
+
+use Drupal\views\Views;
+use Drupal\Core\Url;
+
+/**
+ * @file
+ * API Extension for using Leaflet with GeoJSON that currently just allows to add a bbox strategy.
+ */
+
+function leaflet_geojson_source_get_info($source = NULL, $skip_cache = FALSE) {
+  if (!$skip_cache) {
+    static $drupal_static_fast;
+    if (!isset($drupal_static_fast)) {
+      $drupal_static_fast['leaflet_geojson_source_info'] = &drupal_static(__FUNCTION__);
+    }
+    $source_info = &$drupal_static_fast['leaflet_geojson_source_info'];
+    if (empty($source_info)) {
+      if ($cache = \Drupal::cache()->get("leaflet_geojson_source_info")) {
+        $source_info = $cache->data;
+      }
+    }
+  }
+
+  if (empty($source_info)) {
+    $source_info = Drupal::moduleHandler()->invokeAll('leaflet_geojson_source_info');
+
+    // Let other modules alter the source info.
+    Drupal::moduleHandler()->alter('leaflet_geojson_source_info', $source_info);
+
+    \Drupal::cache()->set("leaflet_geojson_source_info", $source_info);
+  }
+
+  if (empty($source)) {
+    return $source_info;
+  }
+  elseif (isset($source_info[$source])) {
+    return $source_info[$source];
+  }
+}
+
+/**
+ * Implements hook_leaflet_geojson_source_info().
+ */
+function leaflet_geojson_leaflet_geojson_source_info() {
+  $sources = array();
+  $views = Views::getAllViews();
+  foreach ($views as $view) {
+    
+    foreach ($view->get('display') as $display_name => $display) {
+
+      // Make GeoJSON sources from the views_geojson module.      
+      if ($display['display_plugin'] == 'geojson_export') {
+
+        
+        $display_title = '(' . $display_name . ')';
+        
+
+        if (!empty($display['display_title'])) {
+          $display_title = $display['display_title'] . ' ' . $display_title;
+        }
+        $title = $view->label() . ' - ' . $display_title;
+
+        $source = array(
+          'id' => $view->get('id') . '_' . $display_name,
+          'title' => $title,
+          'type' => 'views_geojson',
+          'url' =>  Url::fromRoute('view.aggreg_centers.'.$display_name)->toString(),
+        );
+        
+        // Determine if we should use a BBox strategy.
+
+        $arguments = isset($display['display_options']['arguments']) ? $display['display_options']['arguments'] : null;
+        
+        // if null, it means we are using the default view's arguments
+        if (is_null($arguments)) {
+          $defaultDisplay = $view->getDisplay('default');
+          $arguments = $defaultDisplay['display_options']['arguments'];
+        }
+
+        if (isset($arguments['bbox_argument']) && $arguments['bbox_argument']['default_argument_type'] == 'bboxquery') {
+          $source['bbox'] = TRUE;
+          if (isset($arguments['bbox_argument']['default_argument_options'])) {
+            $source['bbox_arg_id'] = $arguments['bbox_argument']['default_argument_options']['arg_id'];
+          }
+        }
+
+        // Custom views_geojson attributes.
+        $source['view'] = $view->get('id');
+        $source['view_display'] = $display;
+        
+        $sources[$source['id']] = $source;
+      }
+    }
+  }
+  return $sources;
+}
+
+/**
+   * Helper function to add another views_geojson layer to the map data.
+   */
+  
+  function leaflet_geojson_map_pane_add_layer($form, &$form_state) {
+    // Increment the count and force a rebuild.  
+    $form_state->set('layer_count', $form_state->get('layer_count')+1);
+    $form_state->setRebuild();
+  }
+  
+
+  /**
+   * Helper function to remove the last views_geojson layer from the map.
+   */
+  
+  function leaflet_geojson_map_pane_remove_last_layer($form, &$form_state) {
+    // Decrement the count and force a rebuild.
+    $form_state->set('layer_count', $form_state->get('layer_count')-1);
+    $form_state->setRebuild();
+  }
