@@ -66,9 +66,10 @@ function leaflet_geojson_leaflet_geojson_source_info() {
           'id' => $view->get('id') . '_' . $display_name,
           'title' => $title,
           'type' => 'views_geojson',
-          'url' =>  Url::fromRoute('view.aggreg_centers.'.$display_name)->toString(),
+          'url' =>  Url::fromRoute('view.'.$view->id().'.'.$display_name)->toString(),
         );
         
+
         // Determine if we should use a BBox strategy.
 
         $arguments = isset($display['display_options']['arguments']) ? $display['display_options']['arguments'] : null;
