@@ -157,10 +157,9 @@
             
             for (var key_data in myFeatures) {
             
-             
+              // define if a marker is already there (to avoid blinking effect)
               if ( markers[key_markers].feature.geometry.coordinates[0] == myFeatures[key_data].geometry.coordinates[0] 
               && markers[key_markers].feature.geometry.coordinates[1] == myFeatures[key_data].geometry.coordinates[1] 
-              && markers[key_markers].feature.properties.type == myFeatures[key_data].properties.type
               && markers[key_markers].feature.properties.geocluster_ids == myFeatures[key_data].properties.geocluster_ids) {
                 not_found = false;
                 myFeatures.splice(key_data, 1); 
@@ -184,15 +183,19 @@
     }
   };
 
-  Drupal.leafletBBox.geoJSONOptions = {
+  Drupal.leafletBBox.geoJSONOptions = { 
+  
+    pointToLayer: function(featureData, latlng) {   
+      title = "";
+      if (featureData.properties.label) {
+        title = featureData.properties.label;
+      }
+      lMarker = new L.Marker(latlng, {title: title});
+    },
 
     onEachFeature: function(feature, layer) {
-      if (feature.properties) {        
-        if (feature.properties.description) {
-          layer.bindPopup(feature.properties.description);
-        } else if (feature.properties.name) {
-          layer.bindPopup(feature.properties.name);
-        }
+      if (feature.properties && feature.properties.popup) {
+        layer.bindPopup(feature.properties.popup);
       }
     }
 
