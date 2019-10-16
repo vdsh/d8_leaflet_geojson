@@ -184,7 +184,7 @@
   };
 
   Drupal.leafletBBox.geoJSONOptions = { 
-  
+
     pointToLayer: function(featureData, latlng) {
       title = "";
       if (featureData.properties.label) {
